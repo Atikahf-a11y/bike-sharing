@@ -133,63 +133,39 @@ with tab1:
         .round(2)
     )
 
-    col_a, col_b = st.columns(2)
-
-    with col_a:
-        fig, ax = plt.subplots(figsize=(7, 5))
-        sns.barplot(
-            data=season_analysis.reset_index(),
-            x="season_label",
-            y="rata_rata_penyewaan",
-            hue="season_label",
-            order=season_analysis.index.tolist(),
-            palette=SEASON_COLORS,
-            legend=False,
-            ax=ax,
-        )
-        for container in ax.containers:
-            ax.bar_label(container, fmt="%.0f", padding=3)
-        ax.set_title("Rata-Rata Penyewaan Sepeda per Hari Berdasarkan Musim", fontweight="bold")
-        ax.set_xlabel("Musim")
-        ax.set_ylabel("Rata-Rata Penyewaan per Hari")
-        sns.despine()
-        fig.tight_layout()
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_b:
-        fig, ax = plt.subplots(figsize=(7, 5))
-        sns.boxplot(
-            data=filtered,
-            x="season_label",
-            y="cnt",
-            order=season_analysis.index.tolist(),
-            hue="season_label",
-            palette=SEASON_COLORS,
-            legend=False,
-            width=0.55,
-            ax=ax,
-        )
-        ax.set_title("Distribusi Penyewaan Sepeda per Hari Berdasarkan Musim", fontweight="bold")
-        ax.set_xlabel("Musim")
-        ax.set_ylabel("Jumlah Penyewaan per Hari")
-        sns.despine()
-        fig.tight_layout()
-        st.pyplot(fig)
-        plt.close(fig)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.barplot(
+        data=season_analysis.reset_index(),
+        x="season_label",
+        y="rata_rata_penyewaan",
+        hue="season_label",
+        order=season_analysis.index.tolist(),
+        palette=SEASON_COLORS,
+        legend=False,
+        ax=ax,
+    )
+    for container in ax.containers:
+        ax.bar_label(container, fmt="%.0f", padding=3)
+    ax.set_title("Rata-Rata Penyewaan Sepeda Berdasarkan Musim",
+                 fontsize=14, fontweight="bold")
+    ax.set_xlabel("Musim")
+    ax.set_ylabel("Rata-Rata Penyewaan per Hari")
+    fig.tight_layout()
+    st.pyplot(fig)
+    plt.close(fig)
 
     # Tren rata-rata per bulan
     nama_bulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
                   "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
-    monthly = filtered.groupby("mnth")["cnt"].mean()
+    monthly = filtered.groupby("mnth")["cnt"].mean().reindex(range(1, 13))
 
-    fig, ax = plt.subplots(figsize=(12, 4.5))
-    ax.plot(monthly.index, monthly.values, marker="o", markersize=7,
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.plot(monthly.index, monthly.values, marker="o", markersize=8,
             linewidth=2.5, color="#219EBC")
     for bulan, nilai in monthly.items():
         ax.annotate(f"{nilai:,.0f}", (bulan, nilai), textcoords="offset points",
                     xytext=(0, 10), ha="center", fontsize=9)
-    ax.set_title("Tren Rata-Rata Penyewaan Sepeda Berdasarkan Bulan", fontweight="bold")
+    ax.set_title("Tren Rata-Rata Penyewaan Sepeda Berdasarkan Bulan")
     ax.set_xlabel("Bulan")
     ax.set_ylabel("Rata-Rata Penyewaan per Hari")
     ax.set_xticks(range(1, 13))
@@ -239,45 +215,65 @@ with tab2:
         user_analysis["total_registered"] / user_analysis["total_penyewaan"] * 100
     )
 
-    col_c, col_d = st.columns(2)
+    plot_user = user_analysis[["persentase_casual", "persentase_registered"]]
+    fig, ax = plt.subplots(figsize=(10, 6))
+    plot_user.plot(
+        kind="bar",
+        stacked=True,
+        color=["#F4A261", "#457B9D"],
+        width=0.55,
+        ax=ax,
+    )
+    for container in ax.containers:
+        labels = [
+            f"{bar.get_height():.1f}%" if bar.get_height() > 0 else ""
+            for bar in container
+        ]
+        ax.bar_label(
+            container,
+            labels=labels,
+            label_type="center",
+            color="white",
+            fontweight="bold",
+        )
+    ax.set_title(
+        "Komposisi Pengguna Casual dan Registered Berdasarkan Jenis Hari",
+        fontsize=13,
+        fontweight="bold",
+    )
+    ax.set_xlabel("Jenis Hari")
+    ax.set_ylabel("Persentase Penyewaan (%)")
+    ax.set_ylim(0, 100)
+    ax.legend(
+        ["Casual", "Registered"],
+        title="Segmen Pengguna",
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
+    )
+    plt.setp(ax.get_xticklabels(), rotation=0)
+    fig.tight_layout()
+    st.pyplot(fig)
+    plt.close(fig)
 
-    with col_c:
-        fig, ax = plt.subplots(figsize=(7, 5))
-        plot_user = user_analysis[["persentase_casual", "persentase_registered"]]
-        plot_user.plot(kind="bar", stacked=True, color=["#F4A261", "#457B9D"],
-                       width=0.55, ax=ax)
-        for container in ax.containers:
-            labels = [f"{b.get_height():.1f}%" if b.get_height() > 0 else ""
-                      for b in container]
-            ax.bar_label(container, labels=labels, label_type="center",
-                         color="white", fontweight="bold")
-        ax.set_title("Komposisi Pengguna Berdasarkan Jenis Hari", fontweight="bold")
-        ax.set_xlabel("Jenis Hari")
-        ax.set_ylabel("Persentase Penyewaan (%)")
-        ax.set_ylim(0, 100)
-        ax.legend(["Casual", "Registered"], title="Segmen Pengguna",
-                  bbox_to_anchor=(1.02, 1), loc="upper left")
-        plt.setp(ax.get_xticklabels(), rotation=0)
-        sns.despine()
-        fig.tight_layout()
-        st.pyplot(fig)
-        plt.close(fig)
-
-    with col_d:
-        fig, ax = plt.subplots(figsize=(7, 5))
-        rata = user_analysis[["rata_rata_casual", "rata_rata_registered"]]
-        rata.plot(kind="bar", color=["#F4A261", "#457B9D"], width=0.6, ax=ax)
-        for container in ax.containers:
-            ax.bar_label(container, fmt="%.0f", padding=3)
-        ax.set_title("Rata-Rata Penyewaan Harian per Segmen", fontweight="bold")
-        ax.set_xlabel("Jenis Hari")
-        ax.set_ylabel("Rata-Rata Penyewaan per Hari")
-        ax.legend(["Casual", "Registered"], title="Segmen Pengguna")
-        plt.setp(ax.get_xticklabels(), rotation=0)
-        sns.despine()
-        fig.tight_layout()
-        st.pyplot(fig)
-        plt.close(fig)
+    fig, ax = plt.subplots(figsize=(11, 6))
+    sns.boxplot(
+        data=filtered,
+        x="season_label",
+        y="cnt",
+        order=[s for s in SEASON_ORDER if s in filtered["season_label"].unique()],
+        hue="season_label",
+        palette=SEASON_COLORS,
+        legend=False,
+        width=0.55,
+        ax=ax,
+    )
+    ax.set_title("Distribusi Penyewaan Sepeda Berdasarkan Musim")
+    ax.set_xlabel("Musim")
+    ax.set_ylabel("Jumlah Penyewaan Sepeda per Hari")
+    sns.despine()
+    fig.tight_layout()
+    st.pyplot(fig)
+    plt.close(fig)
 
     ringkas = []
     for jenis, baris in user_analysis.iterrows():
